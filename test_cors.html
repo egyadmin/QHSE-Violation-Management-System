@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QHSE API CORS Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            direction: rtl;
+        }
+        .test-box {
+            border: 2px solid #16A34A;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #16A34A;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #15803D;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 5px;
+            direction: ltr;
+            text-align: left;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🧪 اختبار اتصال API - QHSE</h1>
+    
+    <div class="test-box">
+        <h2>1️⃣ اختبار تسجيل الدخول</h2>
+        <p>ادخل بيانات تسجيل الدخول:</p>
+        <input type="email" id="email" placeholder="البريد الإلكتروني" style="width: 300px; padding: 8px;">
+        <br><br>
+        <input type="password" id="password" placeholder="كلمة المرور" style="width: 300px; padding: 8px;">
+        <br><br>
+        <button onclick="testLogin()">اختبار تسجيل الدخول</button>
+        <div id="loginResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>2️⃣ اختبار CORS</h2>
+        <button onclick="testCORS()">اختبار CORS</button>
+        <div id="corsResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>3️⃣ اختبار الاتصال بالـ Backend</h2>
+        <button onclick="testConnection()">اختبار الاتصال</button>
+        <div id="connectionResult" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://2fbc074f-4ec4-4da4-9211-60501eb8a27a-00-3jpu4qdhzoiii.pike.replit.dev';
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '⏳ جاري الاتصال...';
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ نجح تسجيل الدخول!</span><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="error">❌ فشل تسجيل الدخول</span><br>
+                        Status: ${response.status}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="error">❌ خطأ في الاتصال!</span><br>
+                    ${error.message}<br><br>
+                    <strong>السبب المحتمل:</strong><br>
+                    - مشكلة CORS (الـ backend لا يسمح بطلبات من هذا الموقع)<br>
+                    - الـ Backend غير متاح<br>
+                    - مشكلة في الشبكة
+                `;
+                console.error('Login Error:', error);
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('corsResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '⏳ جاري اختبار CORS...';
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type',
+                    }
+                });
+
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+
+                resultDiv.innerHTML = `
+                    <span class="success">✅ CORS Headers موجودة!</span><br>
+                    Status: ${response.status}<br>
+                    <pre>${JSON.stringify(headers, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="error">❌ CORS غير مُفعّل!</span><br>
+                    ${error.message}<br><br>
+                    <strong>الحل:</strong><br>
+                    يجب إضافة CORS في الـ Backend:
+                    <pre>
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+                    </pre>
+                `;
+                console.error('CORS Error:', error);
+            }
+        }
+
+        async function testConnection() {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '⏳ جاري اختبار الاتصال...';
+
+            try {
+                const response = await fetch(API_URL);
+                const text = await response.text();
+
+                resultDiv.innerHTML = `
+                    <span class="success">✅ الاتصال بالـ Backend ناجح!</span><br>
+                    Status: ${response.status}<br>
+                    <details>
+                        <summary>عرض الرد الكامل</summary>
+                        <pre>${text.substring(0, 500)}...</pre>
+                    </details>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="error">❌ فشل الاتصال بالـ Backend!</span><br>
+                    ${error.message}<br><br>
+                    تأكد من أن الـ Backend يعمل على:<br>
+                    <a href="${API_URL}" target="_blank">${API_URL}</a>
+                `;
+                console.error('Connection Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

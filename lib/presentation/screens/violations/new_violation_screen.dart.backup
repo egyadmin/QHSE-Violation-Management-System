@@ -1,0 +1,631 @@
+import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:provider/provider.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/violations_provider.dart';
+import '../../../data/services/qhse_service.dart';
+
+/// Advanced Multi-Step Violation Form - Matching Backend API
+class NewViolationScreen extends StatefulWidget {
+  const NewViolationScreen({super.key});
+
+  @override
+  State<NewViolationScreen> createState() => _NewViolationScreenState();
+}
+
+class _NewViolationScreenState extends State<NewViolationScreen> {
+  int _currentStep = 0;
+  final _formKey = GlobalKey<FormState>();
+
+  // Form Controllers
+  final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _violatorNameController = TextEditingController();
+  final _violatorEmpIdController = TextEditingController();
+  final _violatorCompanyController = TextEditingController();
+
+  // Form Data
+  int? _selectedDomainId;
+  String? _selectedDomainCode;
+  int? _selectedViolationTypeId;
+  int? _selectedProjectId;
+  String? _selectedSafetySubType;
+  String _selectedCategory = 'minor';
+  String _selectedSeverity = 'medium';
+  String _selectedCardType = 'yellow';
+  String _selectedActionTaken = 'first_warning';
+  DateTime _selectedDate = DateTime.now();
+  TimeOfDay _selectedTime = TimeOfDay.now();
+  
+  bool _isSubmitting = false;
+  bool _isLoadingData = true;
+
+  final _qhseService = QHSEService();
+
+  // Data from API
+  List<Map<String, dynamic>> _domains = [];
+  List<Map<String, dynamic>> _projects = [];
+  List<Map<String, dynamic>> _employees = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMasterData();
+  }
+
+  Future<void> _loadMasterData() async {
+    setState(() => _isLoadingData = true);
+    
+    try {
+      // Load domains and projects from API
+      final domains = await _qhseService.getDomains();
+      final projects = await _qhseService.getProjects();
+      
+      setState(() {
+        _domains = domains;
+        _projects = projects;
+        _isLoadingData = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingData = false);
+    }
+  }
+
+  // Mock data for sub-types
+  final Map<String, List<Map<String, dynamic>>> _safetySubTypes = {
+    'safety': [
+      {'id': 1, 'nameAr': 'مخالفات السلامة العامة', 'nameEn': 'General Safety Violations'},
+      {'id': 2, 'nameAr': 'معدات الوقاية الشخصية', 'nameEn': 'PPE Violations'},
+    ],
+    'equipment': [
+      {'id': 3, 'nameAr': 'مخالفات المعدات', 'nameEn': 'Equipment Violations'},
+    ],
+    'driver': [
+      {'id': 4, 'nameAr': 'مخالفات السائقين', 'nameEn': 'Driver Violations'},
+    ],
+  };
+
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _locationController.dispose();
+    _violatorNameController.dispose();
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: const Color(0xFF0B7A3E),
+        title: Text(
+          isArabic ? 'إضافة مخالفة جديدة' : 'New Violation',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: _isLoadingData
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: Color(0xFF0B7A3E)),
+                  const SizedBox(height: 16),
+                  Text(
+                    isArabic ? 'جاري تحميل البيانات...' : 'Loading data...',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            )
+          : Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  // Progress Indicator
+                  _buildProgressIndicator(isArabic),
+                  
+                  // Step Content
+                  Expanded(
+                    child: _buildStepContent(isArabic),
+                  ),
+                  
+                  // Navigation Buttons
+                  _buildNavigationButtons(isArabic),
+                ],
+              ),
+            ),
+    );
+  }
+
+  // Helper methods
+  Widget _buildProgressIndicator(bool isArabic) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        children: List.generate(8, (index) {
+          final isCompleted = index < _currentStep;
+          final isCurrent = index == _currentStep;
+          return Expanded(
+            child: Container(
+              height: 4,
+              margin: EdgeInsets.only(right: index < 7 ? 4 : 0),
+              decoration: BoxDecoration(
+                color: isCompleted || isCurrent ? const Color(0xFF0B7A3E) : Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildStepContent(bool isArabic) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _getStepWidget(_currentStep, isArabic),
+      ),
+    );
+  }
+
+  Widget _getStepWidget(int step, bool isArabic) {
+    switch (step) {
+      case 0:
+        return _buildDomainStep(isArabic);
+      case 1:
+        return _buildViolationTypeStep(isArabic);
+      case 2:
+        return _buildEmployeeStep(isArabic);
+      case 3:
+        return _buildProjectStep(isArabic);
+      case 4:
+        return _buildLocationStep(isArabic);
+      case 5:
+        return _buildCategoryStep(isArabic);
+      case 6:
+        return _buildDateTimeStep(isArabic);
+      case 7:
+        return _buildReviewStep(isArabic);
+      default:
+        return Container();
+    }
+  }
+
+  Widget _buildDomainStep(bool isArabic) {
+    return Column(
+      key: const ValueKey(0),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          isArabic ? 'اختر التصنيف' : 'Select Domain',
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          isArabic ? 'اختر نوع تصنيف المخالفة' : 'Choose violation domain type',
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+        ),
+        const SizedBox(height: 24),
+        
+        // Check if domains are loaded
+        if (_domains.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    isArabic ? 'لا توجد تصنيفات متاحة' : 'No domains available',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ..._domains.map((domain) => _buildDomainCard(domain, isArabic)),
+      ],
+    );
+  }
+
+  Widget _buildDomainCard(Map<String, dynamic> domain, bool isArabic) {
+    // Null safety checks
+    final domainId = domain['id'];
+    if (domainId == null) return const SizedBox.shrink();
+    
+    final isSelected = _selectedDomainId == domainId;
+    
+    // Parse color from hex string or use default color
+    Color domainColor;
+    try {
+      if (domain['color'] is int) {
+        domainColor = Color(domain['color'] as int);
+      } else if (domain['color'] is String) {
+        final hexColor = (domain['color'] as String).replaceAll('#', '');
+        domainColor = Color(int.parse('FF$hexColor', radix: 16));
+      } else {
+        domainColor = const Color(0xFF0B7A3E); // default green
+      }
+    } catch (e) {
+      domainColor = const Color(0xFF0B7A3E);
+    }
+    
+    // Get icon
+    IconData domainIcon;
+    if (domain['icon'] is IconData) {
+      domainIcon = domain['icon'] as IconData;
+    } else {
+      final code = domain['code'] as String? ?? '';
+      if (code == 'safety') {
+        domainIcon = Icons.shield;
+      } else if (code == 'health') {
+        domainIcon = Icons.favorite;
+      } else if (code == 'quality') {
+        domainIcon = Icons.verified;
+      } else if (code == 'environment') {
+        domainIcon = Icons.eco;
+      } else {
+        domainIcon = Icons.warning;
+      }
+    }
+    
+    return GestureDetector(
+      onTap: () => setState(() {
+        _selectedDomainId = domainId as int;
+        _selectedDomainCode = domain['code'] as String?;
+      }),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? domainColor : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(color: domainColor.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))
+          ] : [],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: domainColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(domainIcon, color: domainColor),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                isArabic 
+                    ? (domain['nameAr'] as String? ?? domain['name'] as String? ?? 'Unknown')
+                    : (domain['nameEn'] as String? ?? domain['name'] as String? ?? 'Unknown'),
+                style: TextStyle(fontSize: 16, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500),
+              ),
+            ),
+            if (isSelected) Icon(Icons.check_circle, color: domainColor),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildViolationTypeStep(bool isArabic) {
+    return Column(
+      key: const ValueKey(1),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(isArabic ? 'نوع المخالفة' : 'Violation Type', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 24),
+        if (_selectedDomainCode == 'safety') ..._buildSafetySubTypeOptions(isArabic),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _descriptionController,
+          label: isArabic ? 'وصف المخالفة' : 'Description',
+          hint: isArabic ? 'اكتب وصفاً تفصيلياً...' : 'Enter detailed description...',
+          maxLines: 5,
+          validator: (v) => v?.trim().isEmpty ?? true ? (isArabic ? 'الوصف مطلوب' : 'Required') : null,
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildSafetySubTypeOptions(bool isArabic) {
+    return ['safety', 'equipment', 'driver'].map((type) {
+      return RadioListTile<String>(
+        value: type,
+        groupValue: _selectedSafetySubType,
+        onChanged: (v) => setState(() => _selectedSafetySubType = v),
+        title: Text(type == 'safety' ? (isArabic ? 'السلامة' : 'Safety') :
+                    type == 'equipment' ? (isArabic ? 'المعدات' : 'Equipment') :
+                    (isArabic ? 'السائقين' : 'Drivers')),
+      );
+    }).toList();
+  }
+
+  Widget _buildEmployeeStep(bool isArabic) {
+    return Column(
+      key: const ValueKey(2),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(isArabic ? 'بيانات المخالف' : 'Violator Details', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 24),
+        _buildTextField(
+          controller: _violatorNameController,
+          label: isArabic ? 'اسم المخالف' : 'Name',
+          hint: isArabic ? 'مثال: محمد أحمد' : 'e.g., Mohammed Ahmed',
+          icon: Icons.person,
+          validator: (v) => v?.trim().isEmpty ?? true ? (isArabic ? 'الاسم مطلوب' : 'Required') : null,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _violatorEmpIdController,
+          label: isArabic ? 'رقم الموظف' : 'Employee ID',
+          hint: isArabic ? 'مثال: EMP001' : 'e.g., EMP001',
+          icon: Icons.badge,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _violatorCompanyController,
+          label: isArabic ? 'الشركة' : 'Company',
+          hint: isArabic ? 'مثال: شركة المقاولات' : 'e.g., Contracting Co.',
+          icon: Icons.business,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProjectStep(bool isArabic) {
+    return Column(
+      key: const ValueKey(3),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(isArabic ? 'المشروع' : 'Project', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 24),
+        ..._projects.map((project) => RadioListTile<int>(
+          value: project['id'] as int,
+          groupValue: _selectedProjectId,
+          onChanged: (v) => setState(() => _selectedProjectId = v),
+          title: Text(project['name'] as String),
+        )),
+      ],
+    );
+  }
+
+ Widget _buildLocationStep(bool isArabic) {
+    return Column(
+      key: const ValueKey(4),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(isArabic ? 'الموقع' : 'Location', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 24),
+        _buildTextField(
+          controller: _locationController,
+          label: isArabic ? 'وصف الموقع' : 'Location',
+          hint: isArabic ? 'مثال: الموقع A - المبنى 3' : 'e.g., Site A - Building 3',
+          icon: Icons.location_on,
+        ),
+        const SizedBox(height: 16),
+        Container(
+          height: 200,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.map, size: 48, color: Colors.grey[400]),
+                const SizedBox(height: 8),
+                Text(isArabic ? 'الخريطة - قريباً' : 'Map - Coming Soon', style: TextStyle(color: Colors.grey[600])),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryStep(bool isArabic) {
+    return Column(
+      key: const ValueKey(5),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(isArabic ? 'التصنيفات' : 'Categories', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 24),
+        _buildDropdownField(isArabic ? 'الفئة' : 'Category', _selectedCategory, [
+          DropdownMenuItem(value: 'minor', child: Text(isArabic ? 'بسيطة' : 'Minor')),
+          DropdownMenuItem(value: 'semi_major', child: Text(isArabic ? 'متوسطة' : 'Semi Major')),
+          DropdownMenuItem(value: 'major', child: Text(isArabic ? 'كبيرة' : 'Major')),
+        ], (v) => setState(() => _selectedCategory = v!)),
+        const SizedBox(height: 16),
+        _buildDropdownField(isArabic ? 'الخطورة' : 'Severity', _selectedSeverity, [
+          DropdownMenuItem(value: 'low', child: Text(isArabic ? 'منخفضة' : 'Low')),
+          DropdownMenuItem(value: 'medium', child: Text(isArabic ? 'متوسطة' : 'Medium')),
+          DropdownMenuItem(value: 'high', child: Text(isArabic ? 'عالية' : 'High')),
+          DropdownMenuItem(value: 'critical', child: Text(isArabic ? 'حرجة' : 'Critical')),
+        ], (v) => setState(() => _selectedSeverity = v!)),
+        const SizedBox(height: 16),
+        _buildDropdownField(isArabic ? 'نوع البطاقة' : 'Card Type', _selectedCardType, [
+          DropdownMenuItem(value: 'green', child: Text(isArabic ? 'خضراء' : 'Green')),
+          DropdownMenuItem(value: 'yellow', child: Text(isArabic ? 'صفراء' : 'Yellow')),
+          DropdownMenuItem(value: 'red', child: Text(isArabic ? 'حمراء' : 'Red')),
+        ], (v) => setState(() => _selectedCardType = v!)),
+        const SizedBox(height: 16),
+        _buildDropdownField(isArabic ? 'الإجراء المتخذ' : 'Action Taken', _selectedActionTaken, [
+          DropdownMenuItem(value: 'first_warning', child: Text(isArabic ? 'إنذار أول' : 'First Warning')),
+          DropdownMenuItem(value: 'second_warning', child: Text(isArabic ? 'إنذار ثاني' : 'Second Warning')),
+          DropdownMenuItem(value: 'final_warning', child: Text(isArabic ? 'إنذار نهائي' : 'Final Warning')),
+        ], (v) => setState(() => _selectedActionTaken = v!)),
+      ],
+    );
+  }
+
+  Widget _buildDateTimeStep(bool isArabic) {
+    return Column(
+      key: const ValueKey(6),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(isArabic ? 'التاريخ والوقت' : 'Date & Time', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 24),
+        ListTile(
+          leading: const Icon(Icons.calendar_today, color: Color(0xFF0B7A3E)),
+          title: Text(DateFormat('yyyy-MM-dd').format(_selectedDate)),
+          subtitle: Text(isArabic ? 'التاريخ' : 'Date'),
+          onTap: () async {
+            final date = await showDatePicker(
+              context: context,
+              initialDate: _selectedDate,
+              firstDate: DateTime(2020),
+              lastDate: DateTime.now(),
+            );
+            if (date != null) setState(() => _selectedDate = date);
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.access_time, color: Color(0xFF0B7A3E)),
+          title: Text(_selectedTime.format(context)),
+          subtitle: Text(isArabic ? 'الوقت' : 'Time'),
+          onTap: () async {
+            final time = await showTimePicker(context: context, initialTime: _selectedTime);
+            if (time != null) setState(() => _selectedTime = time);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewStep(bool isArabic) {
+    return Column(
+      key: const ValueKey(7),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(isArabic ? 'المراجعة والحفظ' : 'Review & Submit', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 24),
+        _buildReviewItem(isArabic ? 'التصنيف' : 'Domain', _domains.firstWhere((d) => d['id'] == _selectedDomainId, orElse: () => {'nameAr': '-', 'nameEn': '-'})[isArabic ? 'nameAr' : 'nameEn'] as String),
+        _buildReviewItem(isArabic ? 'المخالف' : 'Violator', _violatorNameController.text.isEmpty ? '-' : _violatorNameController.text),
+        _buildReviewItem(isArabic ? 'الموقع' : 'Location', _locationController.text.isEmpty ? '-' : _locationController.text),
+        _buildReviewItem(isArabic ? 'الخطورة' : 'Severity', _selectedSeverity),
+      ],
+    );
+  }
+
+  Widget _buildReviewItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 120, child: Text(label, style: TextStyle(color: Colors.grey[600]))),
+          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationButtons(bool isArabic) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, -2))],
+      ),
+      child: Row(
+        children: [
+          if (_currentStep > 0)
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => setState(() => _currentStep--),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(isArabic ? 'السابق' : 'Previous'),
+              ),
+            ),
+          if (_currentStep > 0) const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : () {
+                if (_currentStep < 7) {
+                  setState(() => _currentStep++);
+                } else {
+                  _submitViolation();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0B7A3E),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text(_currentStep < 7 ? (isArabic ? 'التالي' : 'Next') : (isArabic ? 'حفظ' : 'Submit')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    IconData? icon,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          validator: validator,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: icon != null ? Icon(icon, color: const Color(0xFF0B7A3E)) : null,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdownField(String label, String value, List<DropdownMenuItem<String>> items, ValueChanged<String?> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: value,
+          items: items,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+}
