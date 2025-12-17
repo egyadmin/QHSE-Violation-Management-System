@@ -39,9 +39,9 @@ workflows:
       - build/ios/iphoneos/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
-          publishing:
-                app_store_connect:
-                        submit_to_testflight: true
+        publishing:
+              app_store_connect:
+                    submit_to_testflight: true
   
   android-release:
     name: Android Release
