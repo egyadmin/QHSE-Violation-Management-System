@@ -11,6 +11,9 @@ workflows:
       vars:
         BUNDLE_ID: "com.sajco.qhse"
     
+    integrations:
+      app_store_connect: Codemagic Integration Key
+    
     scripts:
       - name: Get Flutter packages
         script: |
