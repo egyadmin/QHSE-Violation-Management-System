@@ -8,52 +8,8 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
-      groups:
-        - app_store_credentials
       vars:
-        APP_STORE_APP_ID: "com.sajco.qhse"
-    
-    scripts:
-      - name: Set up code signing settings on Xcode project
-        script: |
-          xcode-project use-profiles
-      
-      - name: Get Flutter packages
-        script: |
-          flutter packages pub get
-      
-      - name: Install pods
-        script: |
-          find . -name "Podfile" -execdir pod install \;
-      
-      - name: Flutter build IPA
-        script: |
-          flutter build ipa --release \
-            --build-name=1.0.0 \
-            --build-number=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1)) \
-            --export-options-plist=/Users/builder/export_options.plist
-    
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
-    
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        beta_groups:
-          - Internal Testers
-  
-  ios-debug:
-    name: iOS Debug (No Signing)
-    instance_type: mac_mini_m1
-    max_build_duration: 30
-    
-    environment:
-      flutter: stable
-      xcode: latest
-      cocoapods: default
+        BUNDLE_ID: "com.sajco.qhse"
     
     scripts:
       - name: Get Flutter packages
@@ -68,13 +24,34 @@ workflows:
         script: |
           flutter build ios --release --no-codesign
       
-      - name: Create unsigned IPA
+      - name: Create IPA
         script: |
           cd build/ios/iphoneos
-          mkdir Payload
+          mkdir -p Payload
           cp -r Runner.app Payload/
-          zip -r qhse_app_unsigned.ipa Payload
+          zip -r qhse_app.ipa Payload
+          rm -rf Payload
     
     artifacts:
       - build/ios/iphoneos/*.ipa
       - /tmp/xcodebuild_logs/*.log
+  
+  android-release:
+    name: Android Release
+    instance_type: mac_mini_m1
+    max_build_duration: 30
+    
+    environment:
+      flutter: stable
+    
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      
+      - name: Build APK
+        script: |
+          flutter build apk --release
+    
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
