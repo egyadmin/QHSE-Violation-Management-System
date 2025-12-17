@@ -188,7 +188,7 @@ This software is proprietary and confidential. Unauthorized copying, distributio
 ## 📞 Contact
 
 For support or inquiries:
-- 📧 Email: support@sajco.com
+- 📧 Email: tgohary@sajco.com.sa
 - 🌐 Website: [sajco.com](https://sajco.com)
 
 ---
