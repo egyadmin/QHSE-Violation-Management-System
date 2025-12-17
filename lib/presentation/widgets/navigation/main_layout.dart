@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:easy_localization/easy_localization.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_gradients.dart';
 import '../../../core/constants/app_icons.dart';
 import '../../screens/dashboard/dashboard_screen.dart';
 import '../../screens/violations/violations_list_screen.dart';
@@ -9,7 +8,7 @@ import '../../screens/violations/new_violation_screen.dart';
 import '../../screens/projects/projects_list_screen.dart';
 import '../../screens/more/more_screen.dart';
 
-/// Main Layout with Bottom Navigation and Center FAB
+/// Premium Main Layout with Floating Navigation Bar
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
 
@@ -17,8 +16,10 @@ class MainLayout extends StatefulWidget {
   State<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout> {
+class _MainLayoutState extends State<MainLayout> with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
+  late AnimationController _fabController;
+  late Animation<double> _fabAnimation;
 
   final List<Widget> _screens = [
     const DashboardScreen(),
@@ -26,6 +27,24 @@ class _MainLayoutState extends State<MainLayout> {
     const ProjectsListScreen(),
     const MoreScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fabController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fabAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _fabController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _fabController.dispose();
+    super.dispose();
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -36,7 +55,18 @@ class _MainLayoutState extends State<MainLayout> {
   void _onFabPressed() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const NewViolationScreen()),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const NewViolationScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 1),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+            child: child,
+          );
+        },
+      ),
     );
   }
 
@@ -45,59 +75,96 @@ class _MainLayoutState extends State<MainLayout> {
     final isArabic = context.locale.languageCode == 'ar';
     
     return Scaffold(
-      body: _screens[_currentIndex],
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onFabPressed,
-        backgroundColor: const Color(0xFF0B7A3E),
-        elevation: 6,
-        child: const Icon(
-          Icons.add,
-          size: 32,
-          color: Colors.white,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _screens[_currentIndex],
+      ),
+      extendBody: true,
+      floatingActionButton: MouseRegion(
+        onEnter: (_) => _fabController.forward(),
+        onExit: (_) => _fabController.reverse(),
+        child: ScaleTransition(
+          scale: _fabAnimation,
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF0B7A3E), Color(0xFF10B981)],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0B7A3E).withOpacity(0.4),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: FloatingActionButton(
+              onPressed: _onFabPressed,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              child: const Icon(Icons.add, size: 32, color: Colors.white),
+            ),
+          ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        color: Colors.white,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        elevation: 8,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              // Dashboard
-              _buildNavItem(
-                index: 0,
-                icon: AppIcons.dashboard,
-                label: isArabic ? 'لوحة التحكم' : 'Dashboard',
-                isArabic: isArabic,
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-              // Violations
-              _buildNavItem(
-                index: 1,
-                icon: AppIcons.violations,
-                label: isArabic ? 'المخالفات' : 'Violations',
-                isArabic: isArabic,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Dashboard
+                  _buildNavItem(
+                    index: 0,
+                    icon: AppIcons.dashboard,
+                    label: isArabic ? 'الرئيسية' : 'Home',
+                  ),
+                  // Violations
+                  _buildNavItem(
+                    index: 1,
+                    icon: AppIcons.violations,
+                    label: isArabic ? 'المخالفات' : 'Violations',
+                  ),
+                  // Spacer for FAB
+                  const SizedBox(width: 64),
+                  // Projects
+                  _buildNavItem(
+                    index: 2,
+                    icon: AppIcons.projects,
+                    label: isArabic ? 'المشاريع' : 'Projects',
+                  ),
+                  // More
+                  _buildNavItem(
+                    index: 3,
+                    icon: AppIcons.more,
+                    label: isArabic ? 'المزيد' : 'More',
+                  ),
+                ],
               ),
-              // Spacer for FAB
-              const SizedBox(width: 48),
-              // Projects
-              _buildNavItem(
-                index: 2,
-                icon: AppIcons.projects,
-                label: isArabic ? 'المشاريع' : 'Projects',
-                isArabic: isArabic,
-              ),
-              // More
-              _buildNavItem(
-                index: 3,
-                icon: AppIcons.more,
-                label: isArabic ? 'المزيد' : 'More',
-                isArabic: isArabic,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -108,33 +175,53 @@ class _MainLayoutState extends State<MainLayout> {
     required int index,
     required IconData icon,
     required String label,
-    required bool isArabic,
   }) {
     final isSelected = _currentIndex == index;
     
-    return Expanded(
-      child: InkWell(
-        onTap: () => _onItemTapped(index),
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0B7A3E).withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: isSelected ? const Color(0xFF0B7A3E) : Colors.grey[600],
-              size: 24,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                icon,
+                color: isSelected ? const Color(0xFF0B7A3E) : Colors.grey[500],
+                size: isSelected ? 26 : 24,
+              ),
             ),
             const SizedBox(height: 4),
-            Text(
-              label,
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: TextStyle(
-                fontSize: 11,
-                color: isSelected ? const Color(0xFF0B7A3E) : Colors.grey[600],
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: isSelected ? 11 : 10,
+                color: isSelected ? const Color(0xFF0B7A3E) : Colors.grey[500],
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              child: Text(label),
+            ),
+            // Selection indicator
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(top: 4),
+              width: isSelected ? 20 : 0,
+              height: 3,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0B7A3E), Color(0xFF10B981)],
+                ),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ],
         ),

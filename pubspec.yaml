@@ -45,6 +45,9 @@ dependencies:
   
   # JSON Serialization
   json_annotation: ^4.8.1
+  
+  # Date Formatting
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -56,15 +59,15 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: true
-  ios: true
-  image_path: "assets/images/logo.png"
+  ios: false
+  image_path: "assets/images/sajco_qhse_app_icon_1765444690344.png"
   min_sdk_android: 21
   web:
     generate: true
-    image_path: "assets/images/logo.png"
+    image_path: "assets/images/sajco_qhse_app_icon_1765444690344.png"
   windows:
     generate: true
-    image_path: "assets/images/logo.png"
+    image_path: "assets/images/sajco_qhse_app_icon_1765444690344.png"
     icon_size: 48
 
 flutter:

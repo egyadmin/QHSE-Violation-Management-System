@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/violations_provider.dart';
+import 'providers/notifications_provider.dart';
+import 'providers/approvals_provider.dart';
 import 'presentation/widgets/navigation/main_layout.dart';
 import 'presentation/screens/auth/login_screen.dart';
 
@@ -16,6 +18,8 @@ class QHSEApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ViolationsProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationsProvider()),
+        ChangeNotifierProvider(create: (_) => ApprovalsProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {

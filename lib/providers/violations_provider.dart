@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../data/models/violation_model.dart';
 import '../data/services/violations_service.dart';
+import '../data/services/auth_service.dart';
 
 class ViolationsProvider with ChangeNotifier {
   final ViolationsService _violationsService = ViolationsService();
@@ -102,11 +103,20 @@ class ViolationsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Get current user ID
+      final user = await AuthService().getCurrentUser();
+      final reporterId = user?['id']?.toString();
+      
+      if (reporterId == null) {
+        throw Exception('User not logged in or invalid user ID');
+      }
+
       final newViolation = await _violationsService.createViolation(
         title: title,
         description: description,
         qhseDomain: qhseDomain,
         severity: severity,
+        reporterId: reporterId,
         violationTypeId: violationTypeId,
         projectId: projectId,
         location: location,
@@ -118,11 +128,11 @@ class ViolationsProvider with ChangeNotifier {
         attachments: attachments,
       );
 
-      _violations.insert(0, newViolation);
       debugPrint('✅ Created violation: ${newViolation.title}');
       
-      _isLoading = false;
-      notifyListeners();
+      // Refresh violations list from API to get the complete data
+      await fetchViolations();
+      
       return true;
     } catch (e) {
       _errorMessage = e.toString();

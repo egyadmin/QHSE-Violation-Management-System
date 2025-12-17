@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:intl/intl.dart';
 import '../../../data/models/violation_model.dart';
 
 class ViolationDetailsScreen extends StatelessWidget {
@@ -128,7 +131,7 @@ class ViolationDetailsScreen extends StatelessWidget {
                   if (violation.projectName != null && violation.projectName!.isNotEmpty)
                     const SizedBox(height: 20),
 
-                  // Location
+                  // Location Text
                   if (violation.location != null && violation.location!.isNotEmpty)
                     _buildSection(
                       isArabic ? 'الموقع' : 'Location',
@@ -138,6 +141,13 @@ class ViolationDetailsScreen extends StatelessWidget {
                     ),
 
                   if (violation.location != null && violation.location!.isNotEmpty)
+                    const SizedBox(height: 20),
+
+                  // GPS Map Section
+                  if (violation.latitude != null && violation.longitude != null)
+                    _buildMapSection(isArabic),
+
+                  if (violation.latitude != null && violation.longitude != null)
                     const SizedBox(height: 20),
 
                   // Reported by
@@ -204,6 +214,125 @@ class ViolationDetailsScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Build interactive map section showing violation location
+  Widget _buildMapSection(bool isArabic) {
+    final location = LatLng(violation.latitude!, violation.longitude!);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle(
+          isArabic ? 'الموقع على الخريطة' : 'Location on Map',
+          Icons.map,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          height: 250,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              children: [
+                FlutterMap(
+                  options: MapOptions(
+                    initialCenter: location,
+                    initialZoom: 15,
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.all,
+                    ),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.sajco.qhse',
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: location,
+                          width: 50,
+                          height: 50,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: _getDomainColor(violation.qhseDomain),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              _getDomainIcon(violation.qhseDomain),
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                // Coordinates overlay
+                Positioned(
+                  bottom: 8,
+                  left: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.gps_fixed,
+                          size: 16,
+                          color: _getDomainColor(violation.qhseDomain),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${violation.latitude!.toStringAsFixed(6)}, ${violation.longitude!.toStringAsFixed(6)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[700],
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

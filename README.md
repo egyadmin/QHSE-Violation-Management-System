@@ -1,325 +1,202 @@
-# QHSE Violation Management System - Flutter App
-## نظام إدارة مخالفات QHSE
+# QHSE Violation Management System
 
-![Flutter](https://img.shields.io/badge/Flutter-3.0+-blue.svg)
-![Dart](https://img.shields.io/badge/Dart-3.0+-blue.svg)
-![License](https://img.shields.io/badge/License-Proprietary-red.svg)
+<p align="center">
+  <img src="assets/images/qhse_icon.png" alt="QHSE App Logo" width="120"/>
+</p>
 
-شامل لإدارة مخالفات الجودة والصحة والسلامة والبيئة (QHSE) مبني بتقنية Flutter.
+<p align="center">
+  <strong>Enterprise-grade Quality, Health, Safety & Environment Management</strong>
+</p>
 
----
-
-## ✨ Features (المميزات)
-
-### Core Features
-- ✅ **13 دور وظيفي مختلف**: Admin, CEO, Officers, Managers, Project Manager
-- ✅ **171 نوع مخالفة** موزعة على 4 تصنيفات رئيسية
-- ✅ **4 تصنيفات QHSE**: السلامة (Safety), الصحة (Health), الجودة (Quality), البيئة (Environment)
-- ✅ **نظام Workflow متقدم** لكل تصنيفQHSE
-- ✅ **دعم كامل للغة العربية والإنجليزية** مع RTL support
-- ✅ **Material Design 3** مع ألوان SAJCO المميزة
-- ✅ **تكامل كامل مع API Backend**
-
-### Currently Implemented (تم تنفيذه)
-- ✅ نظام المصادقة (Login/Logout)
-- ✅ لوحة التحكم الرئيسية
-- ✅ إحصائيات سريعة
-- ✅ بطاقات تصنيفات QHSE
-- ✅ التبديل بين العربية والإنجليزية
-
-### Coming Soon (قريباً)
-- 🔜 شاشة قائمة المخالفات
-- 🔜 شاشة إضافة مخالفة جديدة (8 خطوات)
-- 🔜 شاشة تفاصيل المخالفة
-- 🔜 نظام الموافقة/الرفض
-- 🔜 الرسوم البيانية والتقارير
-- 🔜 إدارة المستخدمين
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-3.0+-02569B?style=for-the-badge&logo=flutter" alt="Flutter"/>
+  <img src="https://img.shields.io/badge/Dart-3.0+-0175C2?style=for-the-badge&logo=dart" alt="Dart"/>
+  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web-green?style=for-the-badge" alt="Platform"/>
+  <img src="https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge" alt="License"/>
+</p>
 
 ---
 
-## 🏗️ Project Structure
+## 📋 Overview
 
-```
-qhse_app/
-├── lib/
-│   ├── main.dart                    # نقطة البداية
-│   ├── app.dart                     # تهيئة التطبيق
-│   │
-│   ├── core/                        # الطبقة الأساسية
-│   │   ├── theme/                   # نظام التصميم
-│   │   │   ├── app_colors.dart      # ألوان التطبيق
-│   │   │   ├── app_gradients.dart   # التدرجات اللونية
-│   │   │   └── app_theme.dart       # Theme configuration
-│   │   ├── constants/               # الثوابت
-│   │   │   ├── app_constants.dart   # إعدادات عامة
-│   │   │   └── app_icons.dart       # الأيقونات
-│   │   ├── l10n/                    # الترجمات
-│   │   ├── routes/                  # التوجيه
-│   │   └── utils/                   # أدوات مساعدة
-│   │
-│   ├── data/                        # طبقة البيانات
-│   │   ├── models/                  # النماذج
-│   │   │   ├── user_model.dart
-│   │   │   ├── qhse_violation_model.dart
-│   │   │   ├── violation_domain_model.dart
-│   │   │   ├── violation_type_model.dart
-│   │   │   └── project_model.dart
-│   │   └── services/                # خدمات API
-│   │       ├── api_client.dart
-│   │       ├── auth_service.dart
-│   │       ├── qhse_service.dart
-│   │       └── projects_service.dart
-│   │
-│   ├── providers/                   # إدارة الحالة
-│   │   └── auth_provider.dart
-│   │
-│   └── presentation/                # طبقة العرض
-│       ├── screens/
-│       │   ├── auth/
-│       │   │   └── login_screen.dart
-│       │   └── dashboard/
-│       │       └── dashboard_screen.dart
-│       └── widgets/
-│
-├── assets/
-│   ├── images/
-│   ├── icons/
-│   └── translations/
-│       ├── ar.json                  # الترجمة العربية
-│       └── en.json                  # الترجمة الإنجليزية
-│
-└── pubspec.yaml                     # تكوين المشروع
-```
+A comprehensive mobile application for managing **Quality, Health, Safety, and Environment (QHSE)** violations. Built with Flutter for cross-platform deployment, featuring real-time GPS tracking, cloud synchronization, and multi-language support.
+
+### Key Highlights
+
+- 🎯 **171 Violation Types** across 4 QHSE domains
+- 👥 **13 User Roles** with granular permissions
+- 🌍 **Bilingual Support** (Arabic & English with RTL)
+- 📍 **GPS Location Tracking** with interactive maps
+- 📸 **Photo Evidence** capture and attachment
+- ☁️ **Cloud Backend** integration
 
 ---
 
-## 📦 Dependencies (المكتبات المستخدمة)
+## ✨ Features
 
-### Core
-- `flutter`: SDK
-- `provider`: ^6.1.1 - State management
-- `easy_localization`: ^3.0.3 - Localization
+### Core Functionality
 
-### Networking
-- `dio`: ^5.4.0 - HTTP client
+| Feature | Description |
+|---------|-------------|
+| **Violation Reporting** | Quick submission with auto-populated fields |
+| **Employee Lookup** | Search employees by ID with auto-fill |
+| **Project Management** | Associate violations with specific projects |
+| **Multi-domain Support** | Safety, Health, Quality, Environment |
+| **Severity Levels** | Low, Medium, High, Critical classification |
 
-### Local Storage
-- `shared_preferences`: ^2.2.2 - Local data
-- `flutter_secure_storage`: ^9.0.0 - Secure token storage
+### QHSE Domains
 
-### UI Components
-- `flutter_spinkit`: ^5.2.0 - Loading animations
-- `shimmer`: ^3.0.0 - Skeleton loading
-- `cached_network_image`: ^3.3.1 - Image caching
+| Domain | Icon | Description |
+|--------|------|-------------|
+| 🔴 **Safety** | Workplace safety violations |
+| 🟢 **Health** | Occupational health issues |
+| 🔵 **Quality** | Quality control deviations |
+| 🟡 **Environment** | Environmental compliance |
 
-### Charts & Maps
-- `fl_chart`: ^0.66.0 - Charts
-- `flutter_map`: ^6.1.0 - Maps
-- `latlong2`: ^0.9.0 - Coordinates
+### User Roles
 
-### Forms & Validation
-- `flutter_form_builder`: ^9.2.1
-- `form_builder_validators`: ^9.1.0
+The system supports a comprehensive role hierarchy:
 
-### Utilities
-- `intl`: ^0.18.1 - Date/time formatting
-- `image_picker`: ^1.0.7 - Camera/gallery
-- `file_picker`: ^6.1.1 - File selection
+- **Executive**: CEO with full oversight
+- **Management**: Safety, Quality, Health, Environment, HSE, Project Managers
+- **Officers**: Domain-specific officers for each QHSE category
+- **System**: Admin with full configuration access
+- **Users**: Standard employees for violation reporting
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Flutter SDK 3.0 or higher
-- Dart SDK 3.0 or higher
+
+- Flutter SDK 3.0+
+- Dart SDK 3.0+
 - Android Studio / VS Code
-- Android SDK / iOS SDK
+- Git
 
 ### Installation
 
-1. **Clone the repository**
 ```bash
-git clone <repository-url>
+# Clone the repository
+git clone https://github.com/egyadmin/QHSE-Violation-Management-System.git
+
+# Navigate to project directory
 cd qhse_app
-```
 
-2. **Install dependencies**
-```bash
+# Install dependencies
 flutter pub get
-```
 
-3. **Configure API URL**
-Edit `lib/core/constants/app_constants.dart`:
-```dart
-static const String baseUrl = 'https://your-replit-url.replit.app';
-```
-
-4. **Run the app**
-```bash
+# Run the application
 flutter run
 ```
 
----
+### Build for Production
 
-## 🎨 Color Palette
+```bash
+# Android APK
+flutter build apk --release
 
-### Primary Colors
-- Primary Green: `#16A34A` (Green-600)
-- Primary Dark: `#15803D` (Green-700)
-- Primary Light: `#22C55E` (Green-500)
+# Android App Bundle (Play Store)
+flutter build appbundle --release
 
-### QHSE Domain Colors
-- Safety (السلامة): `#EF4444` (Red-500)
-- Health (الصحة): `#10B981` (Emerald-500)
-- Quality (الجودة): `#3B82F6` (Blue-500)
-- Environment (البيئة): `#F59E0B` (Amber-500)
-
-### Status Colors
-- Draft: `#94A3B8` (Slate-400)
-- Pending: `#F59E0B` (Amber-500)
-- Approved: `#22C55E` (Green-500)
-- Rejected: `#EF4444` (Red-500)
-- Closed: `#3B82F6` (Blue-500)
-
----
-
-## 🌐 Localization
-
-The app supports both Arabic and English with RTL support for Arabic.
-
-### Adding new translations
-1. Edit `assets/translations/ar.json` for Arabic
-2. Edit `assets/translations/en.json` for English
-3. Use `'key'.tr()` in code to access translations
-
-### Switching languages
-```dart
-// Switch to Arabic
-context.setLocale(const Locale('ar', 'SA'));
-
-// Switch to English
-context.setLocale(const Locale('en', 'US'));
+# iOS (requires macOS)
+flutter build ios --release
 ```
 
 ---
 
-## 👥 User Roles
+## 🏗️ Architecture
 
-The system supports 13 different user roles:
-1. User (مستخدم عادي)
-2. Admin (مدير النظام)
-3. CEO (الرئيس التنفيذي)
-4. Safety Officer (مسؤول السلامة)
-5. Quality Officer (مسؤول الجودة)
-6. Health Officer (مسؤول الصحة المهنية)
-7. Environment Officer (مسؤول البيئة)
-8. Safety Manager (مدير السلامة)
-9. Quality Manager (مدير الجودة)
-10. Health Manager (مدير الصحة المهنية)
-11. Environment Manager (مدير البيئة)
-12. Project Manager (مدير المشروع)
-13. HSE Manager (مدير HSE)
-
----
-
-## 📱 Screens Overview
-
-### 1. Login Screen (شاشة تسجيل الدخول)
-- Email and password authentication
-- Language toggle (Arabic/English)
-- Auto-login support
-- Create account link
-
-### 2. Dashboard Screen (لوحة التحكم)
-- User welcome card
-- Quick stats (4 cards)
-- QHSE domain cards
-- New violation FAB button
-
-### 3. Violations List (قريباً)
-- Filter by domain
-- Search functionality
-- Pagination
-- Status filters
-
-### 4. New Violation Form (قريباً)
-- 8-step wizard
-- Domain selection
-- Map integration
-- Image upload
+```
+lib/
+├── core/                    # Core utilities & configuration
+│   ├── constants/           # App constants & API config
+│   ├── theme/               # Material Design theming
+│   ├── l10n/                # Localization resources
+│   └── utils/               # Helper utilities
+│
+├── data/                    # Data layer
+│   ├── models/              # Data models
+│   └── services/            # API & local services
+│
+├── providers/               # State management (Provider)
+│
+└── presentation/            # UI layer
+    ├── screens/             # App screens
+    └── widgets/             # Reusable components
+```
 
 ---
 
 ## 🔧 Configuration
 
-### API Endpoints
-All API endpoints are configured in `lib/core/constants/app_constants.dart`:
-- Base URL
-- Auth endpoints
-- QHSE endpoints
-- Timeouts
+### API Configuration
 
-### Theme Customization
-Colors and theme can be customized in:
-- `lib/core/theme/app_colors.dart`
-- `lib/core/theme/app_gradients.dart`
-- `lib/core/theme/app_theme.dart`
+Edit `lib/core/constants/app_constants.dart`:
 
----
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-flutter test
-
-# Run with coverage
-flutter test --coverage
+```dart
+static const String baseUrl = 'https://your-api-url.app';
+static const String apiKey = 'your-api-key';
 ```
 
----
+### Environment Setup
 
-## 📝 Development Status
-
-### Phase 1: ✅ Complete
-- Project structure
-- Core configuration
-- Authentication system
-- Basic dashboard
-
-### Phase 2: 🔜 In Progress
-- Violations management
-- QHSE domains
-- Workflow system
-
-### Phase 3: 📅 Planned
-- Reports and analytics
-- User management
-- Training system
+1. Copy API configuration template
+2. Set your production/development URLs
+3. Configure API keys securely
 
 ---
 
-## 🤝 Contributing
+## 📱 Screenshots
 
-This is a proprietary project. Contact the development team for contribution guidelines.
+| Login | Dashboard | New Violation |
+|-------|-----------|---------------|
+| Secure authentication | Real-time statistics | Step-by-step form |
 
 ---
 
-## 📞 Support
+## 🛠️ Tech Stack
 
-For technical support or questions:
-- Email: support@sajco.com
-- Documentation: See `implementation_plan.md`
+| Category | Technology |
+|----------|------------|
+| **Framework** | Flutter 3.0+ |
+| **Language** | Dart 3.0+ |
+| **State Management** | Provider |
+| **Networking** | Dio |
+| **Maps** | Flutter Map + OpenStreetMap |
+| **Localization** | Easy Localization |
+| **Storage** | Shared Preferences, Secure Storage |
+
+---
+
+## 🌐 Supported Platforms
+
+- ✅ Android (API 21+)
+- ✅ iOS (12.0+)
+- ✅ Web (Chrome, Edge, Safari, Firefox)
 
 ---
 
 ## 📄 License
 
-Proprietary - All rights reserved © SAJCO 2025
+**Proprietary** - All rights reserved © SAJCO 2025
+
+This software is proprietary and confidential. Unauthorized copying, distribution, or modification is strictly prohibited.
 
 ---
 
-**Built with ❤️ using Flutter**
+## 📞 Contact
 
-**Last Updated**: December 8, 2025
+For support or inquiries:
+- 📧 Email: support@sajco.com
+- 🌐 Website: [sajco.com](https://sajco.com)
+
+---
+
+<p align="center">
+  <strong>Built with ❤️ using Flutter</strong>
+</p>
+
+<p align="center">
+  <em>Version 1.0.0 | December 2025</em>
+</p>

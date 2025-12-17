@@ -1,12 +1,14 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../providers/violations_provider.dart';
 import '../../../core/utils/image_picker_helper.dart';
 import '../../../data/services/qhse_service.dart';
-import 'location_picker_screen.dart';
 
 /// Enhanced QHSE Violation Form - Complete & Working
 class NewViolationScreen extends StatefulWidget {
@@ -26,6 +28,7 @@ class _NewViolationScreenState extends State<NewViolationScreen> {
   final _employeeIdController = TextEditingController();
   final _employeeNameController = TextEditingController();
   final _companyController = TextEditingController();
+  final MapController _mapController = MapController();
   
   // Services
   final _imagePicker = ViolationImagePicker();
@@ -40,6 +43,7 @@ class _NewViolationScreenState extends State<NewViolationScreen> {
   bool _isLoadingProjects = true;
   bool _isSearchingEmployee = false;
   bool _isLoadingViolationTypes = false;  // NEW: Loading flag
+  bool _isLoadingLocation = true;  // NEW: Location loading state
   
   List<File> _images = [];
   List<Map<String, dynamic>> _projects = [];
@@ -49,12 +53,86 @@ class _NewViolationScreenState extends State<NewViolationScreen> {
   double? _latitude;
   double? _longitude;
   DateTime _violationDateTime = DateTime.now();  // Auto-set to current time
+  DateTime? _locationCapturedAt;  // NEW: When location was captured
+  String? _locationError;  // NEW: Location error message
+  Timer? _debounce;  // Debounce timer for employee search
+
+  // Default location (Riyadh)
+  static const LatLng _defaultLocation = LatLng(24.7136, 46.6753);
 
   @override
   void initState() {
     super.initState();
     _loadProjects();
     _loadViolationTypes();  // Load initial violation types for 'safety'
+    _getCurrentLocation();  // NEW: Auto-detect GPS location
+  }
+
+  /// Auto-detect current GPS location
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isLoadingLocation = true;
+      _locationError = null;
+    });
+
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          _isLoadingLocation = false;
+          _locationError = 'Location services are disabled';
+        });
+        return;
+      }
+
+      // Check location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            _isLoadingLocation = false;
+            _locationError = 'Location permission denied';
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          _isLoadingLocation = false;
+          _locationError = 'Location permission permanently denied';
+        });
+        return;
+      }
+
+      // Get current position
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      if (mounted) {
+        setState(() {
+          _latitude = position.latitude;
+          _longitude = position.longitude;
+          _locationCapturedAt = DateTime.now();
+          _isLoadingLocation = false;
+        });
+        
+        // Move map to current location
+        _mapController.move(LatLng(_latitude!, _longitude!), 15);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingLocation = false;
+          _locationError = 'Could not get location';
+        });
+        print('Location error: $e');
+      }
+    }
   }
 
   Future<void> _loadProjects() async {
@@ -99,8 +177,24 @@ class _NewViolationScreenState extends State<NewViolationScreen> {
     }
   }
 
+  /// Debounced employee search - prevents excessive API calls
+  void _onEmployeeIdChanged(String employeeId) {
+    // Cancel previous timer
+    _debounce?.cancel();
+    
+    // Require at least 3 characters before searching
+    if (employeeId.length < 3) {
+      return;
+    }
+    
+    // Wait 500ms after user stops typing before searching
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _searchEmployee(employeeId);
+    });
+  }
+
   Future<void> _searchEmployee(String employeeId) async {
-    if (employeeId.length < 2) return;
+    if (employeeId.length < 3) return;
     
     setState(() => _isSearchingEmployee = true);
     
@@ -166,6 +260,7 @@ class _NewViolationScreenState extends State<NewViolationScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();  // Cancel debounce timer
     _titleController.dispose();
     _descriptionController.dispose();
     _locationController.dispose();
@@ -241,7 +336,8 @@ class _NewViolationScreenState extends State<NewViolationScreen> {
       if (success) {
         await _showSuccessDialog(isArabic);
       } else {
-        _showErrorDialog(isArabic, 'فشل رفع المخالفة');
+        final error = provider.errorMessage ?? (isArabic ? 'فشل رفع المخالفة' : 'Failed to submit violation');
+        _showErrorDialog(isArabic, error);
       }
     } catch (e) {
       if (mounted) {
@@ -448,7 +544,7 @@ class _NewViolationScreenState extends State<NewViolationScreen> {
                         filled: true,
                         fillColor: Colors.white,
                       ),
-                      onChanged: _searchEmployee,
+                      onChanged: _onEmployeeIdChanged,
                     ),
 
                     const SizedBox(height: 16),
@@ -643,91 +739,295 @@ class _NewViolationScreenState extends State<NewViolationScreen> {
                     const SizedBox(height: 20),
 
                     // Location
-                    _buildSectionTitle(isArabic ? 'الموقع (اختياري)' : 'Location (Optional)'),
+                    _buildSectionTitle(isArabic ? 'الموقع' : 'Location'),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _locationController,
                       decoration: _buildInputDecoration(
-                        isArabic ? 'مثال: الموقع A - المبنى 3' : 'e.g., Site A - Building 3',
-                        Icons.location_on,
+                        isArabic ? 'اسم الموقع (اختياري)' : 'Location name (optional)',
+                        Icons.location_city,
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                    // GPS Location Capture Button
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        // Open professional map screen
-                        final LatLng? selectedLocation = await Navigator.push<LatLng>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => LocationPickerScreen(
-                              initialLocation: _latitude != null && _longitude != null
-                                  ? LatLng(_latitude!, _longitude!)
-                                  : null,
-                            ),
-                          ),
-                        );
-
-                        if (selectedLocation != null && mounted) {
-                          setState(() {
-                            _latitude = selectedLocation.latitude;
-                            _longitude = selectedLocation.longitude;
-                          });
-                        }
-                      },
-                      icon: Icon(
-                        _latitude != null ? Icons.my_location : Icons.map,
-                        color: const Color(0xFF0B7A3E),
-                      ),
-                      label: Text(
-                        _latitude != null
-                            ? (isArabic ? '📍 تم تحديد الموقع ✓' : '📍 Location captured ✓')
-                            : (isArabic ? '🗺️ فتح الخريطة' : '🗺️ Open Map'),
-                        style: TextStyle(
-                          color: _latitude != null ? Colors.green : const Color(0xFF0B7A3E),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: _latitude != null ? Colors.green : const Color(0xFF0B7A3E),
+                    // Embedded Map with GPS
+                    Container(
+                      height: 220,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFF0B7A3E).withOpacity(0.3),
                           width: 2,
                         ),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ),
-
-                    // Show captured coordinates
-                    if (_latitude != null && _longitude != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.green.withOpacity(0.3)),
-                        ),
-                        child: Row(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Stack(
                           children: [
-                            const Icon(Icons.location_on, color: Colors.green, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '${isArabic ? 'الإحداثيات: ' : 'Coordinates: '}${_latitude!.toStringAsFixed(6)}, ${_longitude!.toStringAsFixed(6)}',
-                                style: const TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                            // Map
+                            FlutterMap(
+                              mapController: _mapController,
+                              options: MapOptions(
+                                initialCenter: _latitude != null && _longitude != null
+                                    ? LatLng(_latitude!, _longitude!)
+                                    : _defaultLocation,
+                                initialZoom: _latitude != null ? 15 : 10,
+                                onTap: (tapPosition, point) {
+                                  setState(() {
+                                    _latitude = point.latitude;
+                                    _longitude = point.longitude;
+                                    _locationCapturedAt = DateTime.now();
+                                  });
+                                },
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'com.example.qhse_app',
+                                  maxZoom: 19,
+                                ),
+                                if (_latitude != null && _longitude != null)
+                                  MarkerLayer(
+                                    markers: [
+                                      Marker(
+                                        point: LatLng(_latitude!, _longitude!),
+                                        width: 60,
+                                        height: 60,
+                                        child: const Icon(
+                                          Icons.location_on,
+                                          size: 45,
+                                          color: Color(0xFF0B7A3E),
+                                          shadows: [
+                                            Shadow(
+                                              blurRadius: 10,
+                                              color: Colors.black38,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                            
+                            // Loading overlay
+                            if (_isLoadingLocation)
+                              Container(
+                                color: Colors.white.withOpacity(0.8),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const CircularProgressIndicator(
+                                        color: Color(0xFF0B7A3E),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        isArabic ? 'جارِ تحديد موقعك...' : 'Getting your location...',
+                                        style: const TextStyle(
+                                          color: Color(0xFF0B7A3E),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                            // Refresh location button
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(Icons.my_location, color: Color(0xFF0B7A3E)),
+                                  onPressed: _isLoadingLocation ? null : _getCurrentLocation,
+                                  tooltip: isArabic ? 'تحديد موقعي' : 'Get my location',
+                                  iconSize: 22,
+                                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                ),
+                              ),
+                            ),
+
+                            // Tap instruction
+                            Positioned(
+                              bottom: 8,
+                              left: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.touch_app, color: Colors.white, size: 16),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      isArabic ? 'انقر لتغيير الموقع' : 'Tap to change location',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Location Info Card with Coordinates and Timestamp
+                    if (_latitude != null && _longitude != null)
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF0B7A3E).withOpacity(0.1),
+                              const Color(0xFF0D9448).withOpacity(0.05),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF0B7A3E).withOpacity(0.3)),
+                        ),
+                        child: Column(
+                          children: [
+                            // Coordinates row
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0B7A3E).withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.gps_fixed, color: Color(0xFF0B7A3E), size: 20),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isArabic ? 'الإحداثيات' : 'Coordinates',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${_latitude!.toStringAsFixed(6)}, ${_longitude!.toStringAsFixed(6)}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF0B7A3E),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 12),
+                            const Divider(height: 1),
+                            const SizedBox(height: 12),
+                            
+                            // Timestamp row
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.access_time, color: Colors.blue, size: 20),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isArabic ? 'وقت التحديد' : 'Captured at',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _formatDateTime(_locationCapturedAt ?? DateTime.now(), isArabic),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (_locationError != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber, color: Colors.orange, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                isArabic 
+                                    ? 'لم يتم تحديد الموقع. انقر على الخريطة أو زر التحديد.'
+                                    : 'Location not detected. Tap the map or refresh button.',
+                                style: const TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
                     const SizedBox(height: 24),
 
@@ -810,6 +1110,8 @@ class _NewViolationScreenState extends State<NewViolationScreen> {
                                 width: 24,
                                 child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                               )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   const Icon(Icons.send, size: 24, color: Colors.white),
                                   const SizedBox(width: 12),
@@ -851,5 +1153,20 @@ class _NewViolationScreenState extends State<NewViolationScreen> {
       filled: true,
       fillColor: Colors.white,
     );
+  }
+
+  /// Format datetime for location capture display
+  String _formatDateTime(DateTime dateTime, bool isArabic) {
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final year = dateTime.year;
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final second = dateTime.second.toString().padLeft(2, '0');
+
+    if (isArabic) {
+      return '$day/$month/$year - $hour:$minute:$second';
+    }
+    return '$day/$month/$year at $hour:$minute:$second';
   }
 }

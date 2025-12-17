@@ -42,48 +42,96 @@ class ApiClient {
     );
   }
 
-  /// GET request
+  /// GET request with retry logic for Replit server wake-up
   Future<Response> get(
     String path, {
     Map<String, dynamic>? queryParameters,
     Options? options,
+    int maxRetries = 3,
   }) async {
-    try {
-      // Add API key to query parameters (backend expects it in URL)
-      final params = {
-        ...?queryParameters,
-        'apiKey': AppConstants.apiKey,
-      };
-      
-      final response = await _dio.get(
-        path,
-        queryParameters: params,
-        options: options,
-      );
-      return response;
-    } on DioException catch (e) {
-      throw _handleError(e);
+    // Add API key to query parameters (backend expects it in URL)
+    final params = {
+      ...?queryParameters,
+      'apiKey': AppConstants.apiKey,
+    };
+    
+    Exception? lastError;
+    
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final response = await _dio.get(
+          path,
+          queryParameters: params,
+          options: options,
+        );
+        
+        // Check if response is HTML (server waking up)
+        if (response.data is String && response.data.toString().contains('<!DOCTYPE html>')) {
+          print('⚠️ Server returning HTML, retrying... (attempt $attempt/$maxRetries)');
+          if (attempt < maxRetries) {
+            await Future.delayed(Duration(seconds: attempt * 2)); // Exponential backoff
+            continue;
+          }
+          throw Exception('Server not ready, please try again');
+        }
+        
+        return response;
+      } on DioException catch (e) {
+        lastError = Exception(_handleError(e));
+        print('❌ Request failed (attempt $attempt/$maxRetries): ${e.message}');
+        
+        if (attempt < maxRetries) {
+          await Future.delayed(Duration(seconds: attempt * 2));
+          continue;
+        }
+      }
     }
+    
+    throw lastError ?? Exception('Request failed after $maxRetries attempts');
   }
 
-  /// POST request
+  /// POST request with retry logic
   Future<Response> post(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
+    int maxRetries = 3,
   }) async {
-    try {
-      final response = await _dio.post(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-      );
-      return response;
-    } on DioException catch (e) {
-      throw _handleError(e);
+    Exception? lastError;
+    
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final response = await _dio.post(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          options: options,
+        );
+        
+        // Check if response is HTML (server waking up)
+        if (response.data is String && response.data.toString().contains('<!DOCTYPE html>')) {
+          print('⚠️ Server returning HTML on POST, retrying... (attempt $attempt/$maxRetries)');
+          if (attempt < maxRetries) {
+            await Future.delayed(Duration(seconds: attempt * 2));
+            continue;
+          }
+          throw Exception('Server not ready, please try again');
+        }
+        
+        return response;
+      } on DioException catch (e) {
+        lastError = Exception(_handleError(e));
+        print('❌ POST failed (attempt $attempt/$maxRetries): ${e.message}');
+        
+        if (attempt < maxRetries) {
+          await Future.delayed(Duration(seconds: attempt * 2));
+          continue;
+        }
+      }
     }
+    
+    throw lastError ?? Exception('POST request failed after $maxRetries attempts');
   }
 
   /// PUT request
@@ -115,6 +163,26 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.delete(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+      return response;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// PATCH request
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      final response = await _dio.patch(
         path,
         data: data,
         queryParameters: queryParameters,

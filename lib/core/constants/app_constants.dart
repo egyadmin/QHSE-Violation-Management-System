@@ -1,7 +1,7 @@
 /// API Configuration
 class AppConstants {
   // API Base URL - Development with Public Endpoints
-  static const String baseUrl = 'https://2fbc074f-4ec4-4da4-9211-60501eb8a27a-00-3jpu4qdhzoiii.pike.replit.dev';
+  static const String baseUrl = 'https://qhec.replit.app';
   static const String apiKey = 'QHSE2025\$ecure@API';
   
   // Timeouts

@@ -8,6 +8,8 @@ class Violation {
   final String? projectId;
   final String? projectName;
   final String? location;
+  final double? latitude;  // GPS latitude
+  final double? longitude; // GPS longitude
   final String reportedBy;
   final String? reportedByName;
   final DateTime createdAt;
@@ -25,6 +27,8 @@ class Violation {
     this.projectId,
     this.projectName,
     this.location,
+    this.latitude,
+    this.longitude,
     required this.reportedBy,
     this.reportedByName,
     required this.createdAt,
@@ -61,6 +65,8 @@ class Violation {
       projectId: (json['projectId'] ?? '').toString(),
       projectName: json['projectName'] as String?,
       location: json['location'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       // Backend uses reporterId not reportedBy
       reportedBy: (json['reportedBy'] ?? json['reporterId'] ?? json['createdBy'] ?? '0').toString(),
       // Backend uses violatorName
@@ -89,6 +95,8 @@ class Violation {
       if (projectId != null) 'projectId': projectId,
       if (projectName != null) 'projectName': projectName,
       if (location != null) 'location': location,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
       'reportedBy': reportedBy,
       if (reportedByName != null) 'reportedByName': reportedByName,
       'createdAt': createdAt.toIso8601String(),
@@ -108,6 +116,8 @@ class Violation {
     String? projectId,
     String? projectName,
     String? location,
+    double? latitude,
+    double? longitude,
     String? reportedBy,
     String? reportedByName,
     DateTime? createdAt,
@@ -125,6 +135,8 @@ class Violation {
       projectId: projectId ?? this.projectId,
       projectName: projectName ?? this.projectName,
       location: location ?? this.location,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       reportedBy: reportedBy ?? this.reportedBy,
       reportedByName: reportedByName ?? this.reportedByName,
       createdAt: createdAt ?? this.createdAt,

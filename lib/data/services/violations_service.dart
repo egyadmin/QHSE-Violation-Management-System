@@ -109,6 +109,7 @@ class ViolationsService {
     required String description,
     required String qhseDomain,
     required String severity,
+    required String reporterId,
     required int violationTypeId,  // Must be violation type ID from API
     String? projectId,
     String? location,
@@ -132,7 +133,7 @@ class ViolationsService {
         'domainId': domainId,
         'violationTypeId': violationTypeId,
         'description': description,
-        'reporterId': 'mobile_app',  // TODO: Replace with actual user ID
+        'reporterId': reporterId,
         if (location != null) 'location': location,
         if (projectIdInt != null) 'projectId': projectIdInt,
         if (violatorName != null) 'violatorName': violatorName,
