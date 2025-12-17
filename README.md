@@ -1,7 +1,7 @@
 # QHSE Violation Management System
 
 <p align="center">
-  <img src="assets/images/qhse_icon.png" alt="QHSE App Logo" width="120"/>
+  <img src="assets/images/logo.png" alt="QHSE App Logo" width="120"/>
 </p>
 
 <p align="center">
