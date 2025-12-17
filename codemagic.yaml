@@ -37,8 +37,7 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
 
         integrations:
-
-      app_store_connect: Codemagic Integration Key
+      store_connect: Codemagic Integration Key
   publishing:
     app_store_connect:
       auth: integration
