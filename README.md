@@ -187,9 +187,14 @@ This software is proprietary and confidential. Unauthorized copying, distributio
 
 ## 📞 Contact
 
-For support or inquiries:
-- 📧 Email: tgohary@sajco.com.sa
-- 🌐 Website: [sajco.com](https://sajco.com)
+**Saudi Arabian Jizan Peninsula Contractors Co. (SAJCO)**
+
+| | |
+|---|---|
+| 📧 **Email** | tgohary@sajco.com.sa |
+| 🏢 **Department** | Information Technology Department |
+| 📍 **Location** | Main Branch - Al-Malaz, Riyadh |
+| 🌐 **Website** | [sajco.com.sa](https://sajco.com.sa) |
 
 ---
 
