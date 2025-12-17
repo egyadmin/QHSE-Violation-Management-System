@@ -36,13 +36,15 @@ workflows:
       - build/ios/iphoneos/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
-      integrations:
-      app_store_connect: Codemagic Integration Key
+        integrations:
+    app_store_connect: Codemagic Integration Key
 
   publishing:
     app_store_connect:
       auth: integration
       submit_to_testflight: true
+
+
   
   android-release:
     name: Android Release
