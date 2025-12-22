@@ -16,7 +16,10 @@ workflows:
         - pattern: 'main'
           include: true
     scripts:
-      - name: Set up code signing settings on Xcode project
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files com.sajco.qhse --type IOS_APP_STORE --create
+      - name: Use signing files
         script: |
           xcode-project use-profiles
       - name: Get Flutter packages
