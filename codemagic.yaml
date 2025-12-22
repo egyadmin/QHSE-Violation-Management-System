@@ -12,8 +12,7 @@ workflows:
         BUNDLE_ID: "com.sajco.qhse"
     
     integrations:
-      app_store_connect: Codemagic Integration Key
-    
+    app_store_connect: Codemagic API Key 2025    
     scripts:
       - name: Get Flutter packages
         script: |
