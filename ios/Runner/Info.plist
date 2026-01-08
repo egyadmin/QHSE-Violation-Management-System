@@ -45,5 +45,16 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Camera Permission -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to capture violation photos - يحتاج التطبيق للوصول للكاميرا لالتقاط صور المخالفات</string>
+	<!-- Photo Library Permission -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs photo library access to select violation images - يحتاج التطبيق للوصول لمكتبة الصور لاختيار صور المخالفات</string>
+	<!-- Location Permissions -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs location access to record violation location - يحتاج التطبيق للوصول للموقع لتسجيل موقع المخالفة</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs location access to record violation location - يحتاج التطبيق للوصول للموقع لتسجيل موقع المخالفة</string>
 </dict>
 </plist>

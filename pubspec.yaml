@@ -59,7 +59,7 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: true
-  ios: false
+  ios: true
   image_path: "assets/images/sajco_qhse_app_icon_1765444690344.png"
   min_sdk_android: 21
   web:
