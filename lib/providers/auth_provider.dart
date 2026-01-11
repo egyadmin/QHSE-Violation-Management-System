@@ -95,6 +95,29 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// Delete Account
+  Future<bool> deleteAccount() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final success = await _authService.deleteAccount();
+      if (success) {
+        _currentUser = null;
+        _isAuthenticated = false;
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Delete account error: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Clear error message
   void clearError() {
     _errorMessage = null;

@@ -159,6 +159,36 @@ class AuthService {
     }
   }
 
+  /// Delete account
+  Future<bool> deleteAccount() async {
+    try {
+      developer.log('⚠️ Attempting to delete account');
+      
+      final token = await getToken();
+      if (token != null) {
+        // _apiClient.setToken(token); // Ensure token is set if needed
+      }
+
+      // Try to call the delete endpoint
+      // Note: Adjust the endpoint to match your backend
+      final response = await _apiClient.delete('/api/public/auth/delete-account');
+      
+      if (response.statusCode == 200 || response.statusCode == 204) {
+         developer.log('✅ Account deletion successful');
+         await logout();
+         return true;
+      }
+      
+      developer.log('❌ Account deletion failed: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      developer.log('❌ Account deletion error: $e');
+      // If ApiClient fails (e.g. endpoint doesn't exist), we might want to return false
+      // or implement a fallback mechanism if strict requirement.
+      return false;
+    }
+  }
+
   /// Check if user is logged in
   Future<bool> isLoggedIn() async {
     final token = await getToken();

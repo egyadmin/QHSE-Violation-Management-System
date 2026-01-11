@@ -62,7 +62,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Logout
           _buildLogoutButton(isArabic),
 
+
           const SizedBox(height: 16),
+          
+          // Delete Account Link
+          _buildDeleteAccountButton(isArabic),
+          
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -686,6 +692,91 @@ Key Features:
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: Text(isArabic ? 'تسجيل الخروج' : 'Logout'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeleteAccountButton(bool isArabic) {
+    return Center(
+      child: TextButton.icon(
+        onPressed: () => _showDeleteAccountDialog(context, isArabic),
+        icon: Icon(Icons.delete_forever, color: Colors.red.withOpacity(0.7), size: 20),
+        label: Text(
+          isArabic ? 'حذف الحساب' : 'Delete Account',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.red.withOpacity(0.7),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, bool isArabic) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isArabic ? 'حذف الحساب' : 'Delete Account', style: const TextStyle(color: Colors.red)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isArabic 
+                  ? 'هل أنت متأكد من حذف حسابك نهائياً؟' 
+                  : 'Are you sure you want to permanently delete your account?',
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isArabic 
+                  ? 'سيتم حذف جميع بياناتك ولا يمكن استعادتها.' 
+                  : 'All your data will be erased and cannot be recovered.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Close dialog first
+              Navigator.pop(context);
+              
+              // Get auth provider
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              
+              // Perform deletion
+              final success = await authProvider.deleteAccount();
+              
+              if (context.mounted) {
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isArabic ? 'تم حذف الحساب بنجاح' : 'Account deleted successfully'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  // Navigation to login should be handled by auth state listener or root widget, 
+                  // but if not, we might need to push replacement. 
+                  // Assuming AuthProvider notifies and listener handles it.
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isArabic ? 'فشل حذف الحساب' : 'Failed to delete account'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(isArabic ? 'حذف نهائي' : 'Delete Permanently'),
           ),
         ],
       ),

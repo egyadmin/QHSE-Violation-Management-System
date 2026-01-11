@@ -45,6 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>FLTEnableImpeller</key>
+	<false/>
 	<!-- Camera Permission -->
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to capture violation photos - يحتاج التطبيق للوصول للكاميرا لالتقاط صور المخالفات</string>
@@ -56,5 +58,8 @@
 	<string>This app needs location access to record violation location - يحتاج التطبيق للوصول للموقع لتسجيل موقع المخالفة</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs location access to record violation location - يحتاج التطبيق للوصول للموقع لتسجيل موقع المخالفة</string>
+	<!-- Photo Library Add Permission -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>This app needs photo library access to save images - يحتاج التطبيق للوصول لمكتبة الصور لحفظ الصور</string>
 </dict>
 </plist>

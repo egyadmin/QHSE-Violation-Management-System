@@ -93,9 +93,8 @@ class ViolationImagePicker {
                 leading: const Icon(Icons.camera_alt, color: Color(0xFF0B7A3E)),
                 title: Text(isArabic ? 'التقاط صورة' : 'Take Photo'),
                 onTap: () async {
-                  Navigator.pop(context);
                   final file = await takePhoto(context);
-                  if (context.mounted && file != null) {
+                  if (context.mounted) {
                     Navigator.pop(context, file);
                   }
                 },
@@ -104,9 +103,8 @@ class ViolationImagePicker {
                 leading: const Icon(Icons.photo_library, color: Color(0xFF0B7A3E)),
                 title: Text(isArabic ? 'اختيار من المعرض' : 'Choose from Gallery'),
                 onTap: () async {
-                  Navigator.pop(context);
                   final file = await pickFromGallery(context);
-                  if (context.mounted && file != null) {
+                  if (context.mounted) {
                     Navigator.pop(context, file);
                   }
                 },
